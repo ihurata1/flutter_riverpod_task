@@ -1,240 +1,114 @@
-// ignore_for_file: prefer_const_constructors
+// ignore_for_file: unused_local_variable, prefer_const_constructors, unnecessary_string_interpolations
 
-import 'dart:developer';
-
-import 'package:date_picker_timeline/date_picker_widget.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
-import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:root/components/app_container.dart';
-import 'package:root/components/button.dart';
-import 'package:root/constants/colors.dart';
+import 'package:root/components/loading.dart';
+import 'package:root/constants/controller.dart';
 import 'package:root/constants/navigator/page_route_effect.dart';
 import 'package:root/constants/styles.dart';
-import 'package:root/controllers/task_controller.dart';
 import 'package:root/helpers/device_info.dart';
 import 'package:root/helpers/navigator/navigator.dart';
-import 'package:root/models/task.dart';
-import 'package:root/screens/tasks/create.dart';
+import 'package:root/screens/login.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-import '../components/task_tile.dart';
-import '../helpers/notification.dart';
-import '../helpers/theme_services.dart';
-
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<ConsumerStatefulWidget> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  DateTime _selectedDate = DateTime.now();
-  final _taskController = Get.put(TaskController());
-  late NotifyHelper _notifyHelper;
-
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     // TODO: implement initState
+    ref.read(controller).getData();
     super.initState();
-    _notifyHelper = NotifyHelper();
-
-    _taskController.getTask();
   }
 
-  Widget get _addTaskBar {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: DeviceInfo.width(4)),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                DateFormat.yMMMMd().format(DateTime.now()),
-                style: AppTextStyle.subHeadingStyle,
-              ),
-              Text('Today', style: AppTextStyle.headerStyle),
-            ],
-          ),
-          AppButton(label: '+ Add Task', onTap: () => AppNavigator.push(screen: CreateTaskScreen(), effect: AppRouteEffect.fade))
-        ],
-      ),
-    );
+  onTapLogOut() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    await prefs.setString("token", "");
+    AppNavigator.pushAndRemoveUntil(screen: LoginScreen(), effect: AppRouteEffect.leftToRight);
   }
 
-  Widget get _dateTimeLine {
-    return Container(
-      padding: EdgeInsets.only(left: DeviceInfo.width(4)),
-      child: DatePicker(
-        DateTime.now(),
-        height: DeviceInfo.height(13),
-        width: DeviceInfo.width(20),
-        initialSelectedDate: DateTime.now(),
-        selectionColor: AppColor.blue,
-        selectedTextColor: Colors.white,
-        dateTextStyle: AppTextStyle.dateTextStyle,
-        dayTextStyle: AppTextStyle.dayTextStyle,
-        monthTextStyle: AppTextStyle.monthTextStyle,
-        onDateChange: (date) => setState(() => _selectedDate = date),
-      ),
-    );
-  }
-
-  Widget get _tasksListView {
-    return Expanded(child: Obx(() {
-      return ListView.builder(
-        itemCount: _taskController.taskList.length,
-        itemBuilder: ((context, index) {
-          TaskM task = _taskController.taskList[index];
-          if (task.repeat == "Daily") {
-            DateTime date = DateFormat("HH:mm").parse(task.startTime.toString());
-            var myTime = DateFormat("HH:mm").format(date);
-            _notifyHelper.scheduledNotification(
-              hour: int.parse(myTime.toString().split(":")[0]),
-              minute: int.parse(myTime.toString().split(":")[1]),
-              task: task,
-            );
-            return AnimationConfiguration.staggeredList(
-              position: index,
-              child: SlideAnimation(
-                child: FadeInAnimation(
-                  child: Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () => _showModalBottomSheet(context, task),
-                        child: TaskTile(task: task),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }
-          if (task.date == DateFormat.yMd().format(_selectedDate)) {
-            DateTime date = DateFormat("HH:mm").parse(task.startTime.toString());
-            var myTime = DateFormat("HH:mm").format(date);
-            _notifyHelper.scheduledNotification(
-              hour: int.parse(myTime.toString().split(":")[0]),
-              minute: int.parse(myTime.toString().split(":")[1]),
-              task: task,
-            );
-            return AnimationConfiguration.staggeredList(
-              position: index,
-              child: SlideAnimation(
-                child: FadeInAnimation(
-                  child: Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () => _showModalBottomSheet(context, task),
-                        child: TaskTile(task: task),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          } else {
-            return Container();
-          }
-        }),
-      );
-    }));
-  }
-
-  _bottomSheetButton({required VoidCallback onTap, required String value, required Color color, bool isClose = false}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(20),
+  Widget _card(index) {
+    var watch = ref.watch(controller);
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundImage: NetworkImage(watch.users[index].avatar ?? ""),
         ),
-        height: DeviceInfo.height(6),
-        width: DeviceInfo.width(90),
-        margin: EdgeInsets.only(top: DeviceInfo.height(isClose ? 4 : 1), bottom: DeviceInfo.height(1)),
-        child: Center(
-          child: Text(
-            value,
-            style: GoogleFonts.lato(
-              textStyle: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
-            ),
-          ),
+        title: Text(
+          "${watch.users[index].firstName ?? ""} ${watch.users[index].lastName ?? ""}",
+          style: AppTextStyle.titleStyle,
+        ),
+        subtitle: Text(
+          "${watch.users[index].email ?? ""}",
+          style: AppTextStyle.subTitleStyle,
         ),
       ),
     );
   }
 
-  _showModalBottomSheet(BuildContext context, TaskM task) {
-    Get.bottomSheet(
-      Container(
-        padding: EdgeInsets.only(top: DeviceInfo.height(2)),
-        height: task.isCompleted == 1 ? DeviceInfo.height(28) : DeviceInfo.height(36),
-        decoration: BoxDecoration(
-            color: ThemeService().theme == ThemeMode.light ? Colors.white : AppColor.black30,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
-            )),
-        child: Column(
-          children: [
-            Center(
-              child: Container(
-                height: DeviceInfo.height(0.6),
-                width: DeviceInfo.width(30),
-                decoration: BoxDecoration(borderRadius: BorderRadius.circular(10), color: Colors.grey),
-              ),
-            ),
-            SizedBox(height: DeviceInfo.height(5)),
-            task.isCompleted == 1
-                ? Container()
-                : _bottomSheetButton(
-                    onTap: () {
-                      _taskController.markTaskCompleted(task.id!);
-                      AppNavigator.pop();
-                    },
-                    value: "Task Completed",
-                    color: AppColor.blue,
-                  ),
-            _bottomSheetButton(
-              onTap: () {
-                _taskController.delete(task);
-                AppNavigator.pop();
-              },
-              value: "Delete Task",
-              color: AppColor.red,
-            ),
-            _bottomSheetButton(
-              onTap: () {
-                AppNavigator.pop();
-              },
-              value: "Close",
-              color: Colors.grey,
-              isClose: true,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget get _body {
-    return Column(
-      children: [
-        _addTaskBar,
-        SizedBox(height: DeviceInfo.height(1)),
-        _dateTimeLine,
-        SizedBox(height: DeviceInfo.height(3)),
-        _tasksListView,
-      ],
-    );
+  List<Widget> get _users {
+    var watch = ref.watch(controller);
+    List<Widget> tempList = [];
+    for (int i = 0; i < watch.users.length; i++) {
+      tempList.add(_card(i));
+    }
+    return tempList;
   }
 
   @override
   Widget build(BuildContext context) {
-    return _body;
+    var read = ref.read(controller);
+    var watch = ref.watch(controller);
+    return AppContainer(
+      child: AppLoading(
+        isLoading: watch.isLoading,
+        child: Container(
+          padding: EdgeInsets.only(top: DeviceInfo.height(2)),
+          child: Column(
+            children: [
+              Text(
+                "Kullanıcılar",
+                style: AppTextStyle.headerStyle,
+              ),
+              Container(height: DeviceInfo.height(3)),
+              Expanded(
+                  child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.only(
+                          topRight: Radius.circular(25),
+                          topLeft: Radius.circular(25),
+                        ),
+                      ),
+                      padding: EdgeInsets.only(top: DeviceInfo.height(3)),
+                      child: ListView(children: _users))),
+              GestureDetector(
+                onTap: onTapLogOut,
+                child: Container(
+                  margin: EdgeInsets.symmetric(vertical: DeviceInfo.height(2)),
+                  height: DeviceInfo.height(4),
+                  width: DeviceInfo.height(20),
+                  decoration: BoxDecoration(color: Colors.red.shade300, borderRadius: BorderRadius.circular(20)),
+                  child: Center(
+                    child: Text(
+                      "Çıkıs Yap",
+                      style: AppTextStyle.titleStyle,
+                    ),
+                  ),
+                ),
+              )
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

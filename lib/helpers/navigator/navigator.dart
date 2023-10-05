@@ -1,8 +1,8 @@
 import 'package:flutter/cupertino.dart';
+import 'package:root/screens/home.dart';
 
 import '../../constants/app.dart';
 import '../../constants/navigator/page_route_effect.dart';
-import '../../screens/home.dart';
 import 'builder.dart';
 
 class AppNavigator {

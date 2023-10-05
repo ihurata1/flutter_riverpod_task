@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:root/constants/colors.dart';
 
-import '../helpers/theme_services.dart';
-
 class AppTextStyle {
   static TextStyle get subHeadingStyle {
     return GoogleFonts.lato(
@@ -18,20 +16,13 @@ class AppTextStyle {
 
   static TextStyle get subOptionStyle {
     return GoogleFonts.lato(
-      textStyle: TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.bold,
-        color: ThemeService().theme == ThemeMode.light ? AppColor.black30 : AppColor.white,
-      ),
+      textStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
     );
   }
 
   static TextStyle get headerStyle {
     return GoogleFonts.lato(
-      textStyle: const TextStyle(
-        fontSize: 30,
-        fontWeight: FontWeight.bold,
-      ),
+      textStyle: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
     );
   }
 
@@ -48,7 +39,7 @@ class AppTextStyle {
   static TextStyle get titleStyle {
     return GoogleFonts.lato(
       textStyle: const TextStyle(
-        fontSize: 16,
+        fontSize: 14,
         fontWeight: FontWeight.bold,
       ),
     );
@@ -57,7 +48,7 @@ class AppTextStyle {
   static TextStyle get subTitleStyle {
     return GoogleFonts.lato(
       textStyle: const TextStyle(
-        fontSize: 14,
+        fontSize: 12,
         fontWeight: FontWeight.w400,
       ),
     );

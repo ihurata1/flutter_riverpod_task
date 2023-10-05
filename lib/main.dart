@@ -1,17 +1,17 @@
 // ignore_for_file: prefer_const_constructors
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:get/get.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:root/components/app_container.dart';
 import 'package:root/constants/app.dart';
-import 'package:root/constants/themes.dart';
 import 'package:root/helpers/helper.dart';
 import 'package:root/screens/home.dart';
-import 'package:root/helpers/theme_services.dart';
+import 'package:root/screens/login.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   await AppHelper.initialize();
-  runApp(const MyApp());
+  runApp(ProviderScope(child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {
@@ -24,13 +24,10 @@ class MyApp extends StatelessWidget {
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
     ]);
-    return GetMaterialApp(
+    return MaterialApp(
       title: 'Flutter Demo',
       navigatorKey: Application.navigatorKey,
       debugShowCheckedModeBanner: false,
-      theme: AppThemes.light,
-      darkTheme: AppThemes.dark,
-      themeMode: ThemeService().theme,
       home: const MyHomePage(title: 'Flutter Demo Home Page'),
     );
   }
@@ -46,11 +43,38 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  bool isAuthenticated = false;
+  @override
+  void initState() {
+    // TODO: implement initState
+    getPrefInstance();
+    super.initState();
+  }
+
+  Future<void> getPrefInstance() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    print(prefs.getString("token"));
+    if (prefs.getString("token") == null) {
+      setState(() {
+        isAuthenticated = false;
+      });
+    } else if (prefs.getString("token") == "") {
+      setState(() {
+        isAuthenticated = false;
+      });
+    } else {
+      setState(() {
+        isAuthenticated = true;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    print(isAuthenticated);
+
     return AppContainer(
-      child: HomeScreen(),
-      selectedIndex: 0,
+      child: isAuthenticated ? HomeScreen() : LoginScreen(),
     );
   }
 }
